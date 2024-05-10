@@ -36,6 +36,7 @@ async function run() {
   try {
 
     const assignmentCollection = client.db('assignmentDB').collection('assignment');
+    const submissionCollection = client.db('assignmentDB').collection('submission');
 
     //send data from createAssignment to db
     app.post('/add-assignment', async (req, res) => {
@@ -78,17 +79,35 @@ async function run() {
           difficulty: updatedData.difficulty,
           description: updatedData.description,
           marks: updatedData.marks,
-          deadline: updatedData.rating,
+          deadline: updatedData.deadline,
           photo: updatedData.photo
         },
       };
 
       const result = await assignmentCollection.updateOne(query, data, options);
-     // console.log(result);
-
       res.send(result);
     })
 
+    //find details of specific assignment
+    app.get('/details/:id', async (req, res) => {
+      const result = await assignmentCollection.findOne({ _id: new ObjectId(req.params.id) });
+      res.send(result);
+    })
+
+    // save submitted assignment 
+    app.post('/submission', async (req, res) => {
+      const submission = req.body;
+      const result = await submissionCollection.insertOne(submission);
+      res.send(result);
+    })
+
+    // get all submission for a specific user
+    app.get('/submission/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'email': email }
+      const result = await submissionCollection.find(query).toArray();
+      res.send(result);
+    })
 
 
     await client.db("admin").command({ ping: 1 });
