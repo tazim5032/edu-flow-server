@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -38,18 +38,58 @@ async function run() {
     const assignmentCollection = client.db('assignmentDB').collection('assignment');
 
     //send data from createAssignment to db
-    app.post('/assignment', async (req, res) => {
+    app.post('/add-assignment', async (req, res) => {
       console.log(req.body);
       const result = await assignmentCollection.insertOne(req.body);
-      console.log(result);
+
       res.send(result);
     })
 
     //find all assignment fromm db
-    app.get('/assignment', async (req, res) => {
+    app.get('/all-assignment', async (req, res) => {
       const result = await assignmentCollection.find({}).toArray();
+
       res.send(result);
     })
+
+    //delete a card from db
+    app.delete('/delete/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await assignmentCollection.deleteOne(query);
+      console.log(result);
+      res.send(result);
+    })
+
+    //update assignment
+    app.get('/update/:id', async (req, res) => {
+      const result = await assignmentCollection.findOne({ _id: new ObjectId(req.params.id) });
+      res.send(result);
+    })
+
+    //client side e update confirm korar por
+    app.put('/update/:id', async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) }
+      const updatedData = req.body;
+      const options = { upsert: true }
+      const data = {
+        $set: {
+          title: updatedData.title,
+          difficulty: updatedData.difficulty,
+          description: updatedData.description,
+          marks: updatedData.marks,
+          deadline: updatedData.rating,
+          photo: updatedData.photo
+        },
+      };
+
+      const result = await assignmentCollection.updateOne(query, data, options);
+     // console.log(result);
+
+      res.send(result);
+    })
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
