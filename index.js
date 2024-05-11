@@ -104,10 +104,50 @@ async function run() {
     // get all submission for a specific user
     app.get('/submission/:email', async (req, res) => {
       const email = req.params.email;
-      const query = { 'email': email }
+      const query = { 'student_email': email }
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     })
+
+    //get all pending assingment for judging
+    app.get('/status/:status', async (req, res) => {
+      const status = req.params.status;
+      const query = { status: status }
+      const result = await submissionCollection.find(query).toArray();
+      res.send(result);
+    })
+
+     //find details of specific submitted assignment to give marks
+     app.get('/submitted/:id', async (req, res) => {
+      const result = await submissionCollection.findOne({ _id: new ObjectId(req.params.id) });
+      res.send(result);
+    })
+
+    //marks give and update status
+    app.put('/status-update/:id', async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) }
+      const updatedData = req.body;
+      const options = { upsert: true }
+      const data = {
+        $set: {
+          status: updatedData.status,
+          obtained_marks: updatedData.obtained_marks,
+          feedback: updatedData.feedback,
+          // marks: updatedData.marks,
+          // deadline: updatedData.deadline,
+          // photo: updatedData.photo
+        },
+      };
+
+      const result = await submissionCollection.updateOne(query, data, options);
+      res.send(result);
+    })
+
+    
+
+    
+
+
 
 
     await client.db("admin").command({ ping: 1 });
