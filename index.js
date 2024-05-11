@@ -133,9 +133,6 @@ async function run() {
           status: updatedData.status,
           obtained_marks: updatedData.obtained_marks,
           feedback: updatedData.feedback,
-          // marks: updatedData.marks,
-          // deadline: updatedData.deadline,
-          // photo: updatedData.photo
         },
       };
 
