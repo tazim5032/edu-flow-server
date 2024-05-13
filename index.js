@@ -21,6 +21,26 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+
+//verify jwt middleware
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+
+  if (!token) return res.status(401).send({ message: 'unauthorized access' });
+
+  if (token) {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        res.status(401).send({ message: 'unauthorized access' });
+      }
+      console.log(decoded);
+
+      req.user = decoded;
+      next();
+    })
+  }
+}
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.o4eqbyc.mongodb.net/?retryWrites=true&w=majority`
 
 
