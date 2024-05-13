@@ -40,22 +40,32 @@ async function run() {
     const assignmentCollection = client.db('assignmentDB').collection('assignment');
     const submissionCollection = client.db('assignmentDB').collection('submission');
 
-      //jwt generate - json web token
-    //   app.post('/jwt', async (req, res) => {
-    //     const user = req.body;
-    //     //token banaiteci
-    //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-    //         expiresIn: '365d'
-    //     })
-    //     //browser er cookie te send korteci
-    //     res.cookie('token', token, {
-    //         httpOnly: true,
-    //         secure: process.env.NODE_ENV === 'production',
-    //         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+    //jwt generate - json web token
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      //token banaiteci
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '365d'
+      })
+      //browser er cookie te send korteci
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
 
-    //     }).send({ success: true })
-    //     // res.send({ token })
-    // })
+      }).send({ success: true })
+      // res.send({ token })
+    })
+
+    //clear token on logout
+    app.get('/logout', (req, res) => {
+      res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        maxAge: 0,
+      }).send({ success: true })
+    })
 
     //send data from createAssignment to db
     app.post('/add-assignment', async (req, res) => {
@@ -130,15 +140,15 @@ async function run() {
 
     //get all pending assingment for judging
     app.get('/status/:email/:status', async (req, res) => {
-      const email = req.params.email; 
+      const email = req.params.email;
       const status = req.params.status;
       const query = { email: email, status: status }
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     })
 
-     //find details of specific submitted assignment to give marks
-     app.get('/submitted/:id', async (req, res) => {
+    //find details of specific submitted assignment to give marks
+    app.get('/submitted/:id', async (req, res) => {
       const result = await submissionCollection.findOne({ _id: new ObjectId(req.params.id) });
       res.send(result);
     })
@@ -160,9 +170,9 @@ async function run() {
       res.send(result);
     })
 
-    
 
-    
+
+
 
 
 
