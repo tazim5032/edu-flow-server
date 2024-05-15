@@ -12,6 +12,8 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
+    'https://edu-flow.web.app',
+    'https://edu-flow.firebaseapp.com',
 
   ],
   credentials: true,
@@ -24,6 +26,7 @@ app.use(cookieParser());
 
 //verify jwt middleware
 const verifyToken = (req, res, next) => {
+
   const token = req.cookies?.token;
 
   if (!token) return res.status(401).send({ message: 'unauthorized access' });
@@ -35,7 +38,7 @@ const verifyToken = (req, res, next) => {
       }
       console.log(decoded);
 
-      req.user = decoded;
+      req.user = decoded; //req er modhe key decoded kore nie nilam
       next();
     })
   }
@@ -61,9 +64,9 @@ async function run() {
 
     //jwt generate - json web token
     app.post('/jwt', async (req, res) => {
-      const user = req.body;
+      const email = req.body;
       //token banaiteci
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+      const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: '365d'
       })
       //browser er cookie te send korteci
@@ -94,8 +97,8 @@ async function run() {
       res.send(result);
     })
 
-    //find all assignment fromm db
-    app.get('/all-assignment', async (req, res) => {
+    //find all assignment fromm db for feature section
+    app.get('/all-assignment-feature', async (req, res) => {
       const result = await assignmentCollection.find({}).toArray();
 
       res.send(result);
@@ -142,6 +145,12 @@ async function run() {
       res.send(result);
     })
 
+    //find details submission of specific assignment
+    app.get('/details-submission/:id', async (req, res) => {
+      const result = await submissionCollection.findOne({ _id: new ObjectId(req.params.id) });
+      res.send(result);
+    })
+
     // save submitted assignment 
     app.post('/submission', async (req, res) => {
       const submission = req.body;
@@ -150,16 +159,31 @@ async function run() {
     })
 
     // get all submission for a specific user
-    app.get('/submission/:email', async (req, res) => {
+    app.get('/submission/:email', verifyToken, async (req, res) => {
+
+      const tokenEmail = req.user.email;
       const email = req.params.email;
+
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+
       const query = { 'student_email': email }
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     })
 
     //get all pending assingment for judging
-    app.get('/status/:email/:status', async (req, res) => {
+    app.get('/status/:email/:status', verifyToken, async (req, res) => {
+
+      const tokenEmail = req.user.email;
       const email = req.params.email;
+
+
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+
       const status = req.params.status;
       const query = { email: email, status: status }
       const result = await submissionCollection.find(query).toArray();
@@ -189,14 +213,83 @@ async function run() {
       res.send(result);
     })
 
+    //find all assignment fromm db for pagination
+    // app.get('/all-jobs', async (req, res) => {
+    //   const size = parseInt(req.query.size)
+    //   const page = parseInt(req.query.page) - 1
+    //   const filter = req.query.filter;
+    //   const sort = req.query.sort;
+    //   const search = req.query.search;
+
+    //   let query = {
+    //     title: { $regex: search, $options: 'i' },
+    //   }
+    //   if (filter) query.difficulty = filter;
+
+    //   let options = {}
+    //   if (sort) options = { sort: { deadline: sort === 'asc' ? 1 : -1 } }
+
+    //   const result = await assignmentCollection.find(query, options).skip(page * size).limit(size).toArray()
+
+    //   res.send(result);
+    // })
+
+
+    // //find all assignment data count from db
+    // app.get('/jobs-count', async (req, res) => {
+
+    //   const filter = req.query.filter;
+    //   const search = req.query.search;
+    //   let query = {
+    //     title: { $regex: search, $options: 'i' },
+    //   }
+
+    //   if (filter) query.difficulty = filter
+    //   const cnt = await assignmentCollection.countDocuments(query);
+
+    //   res.send(cnt);
+    // })
 
 
 
+    // Get all assignments data from db for pagination
+    app.get('/all-assignment', async (req, res) => {
+      const size = parseInt(req.query.size)
+      const page = parseInt(req.query.page) - 1
+      const filter = req.query.filter
+      const sort = req.query.sort
+      const search = req.query.search
+    //  console.log(size, page)
 
+      let query = {
+        title: { $regex: search, $options: 'i' },
+      }
+      if (filter) query.difficulty = filter
+      let options = {}
+      if (sort) options = { sort: { deadline: sort === 'asc' ? 1 : -1 } }
+      const result = await assignmentCollection
+        .find(query, options)
+        .skip(page * size)
+        .limit(size)
+        .toArray()
 
+      res.send(result)
+    })
 
+    // Get all assignments data count from db
+    app.get('/assignment-count', async (req, res) => {
+      const filter = req.query.filter
+      const search = req.query.search
+      let query = {
+        title: { $regex: search, $options: 'i' },
+      }
+      if (filter) query.difficulty = filter
+      const count = await assignmentCollection.countDocuments(query)
 
-    await client.db("admin").command({ ping: 1 });
+      res.send({ count })
+    })
+
+   // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
