@@ -90,6 +90,4 @@ vercel --prod
 - check your public API
 
 
-<img src="code.jpg"/>
-
 # Server Deployment Done
