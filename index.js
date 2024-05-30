@@ -213,43 +213,6 @@ async function run() {
       res.send(result);
     })
 
-    //find all assignment fromm db for pagination
-    // app.get('/all-jobs', async (req, res) => {
-    //   const size = parseInt(req.query.size)
-    //   const page = parseInt(req.query.page) - 1
-    //   const filter = req.query.filter;
-    //   const sort = req.query.sort;
-    //   const search = req.query.search;
-
-    //   let query = {
-    //     title: { $regex: search, $options: 'i' },
-    //   }
-    //   if (filter) query.difficulty = filter;
-
-    //   let options = {}
-    //   if (sort) options = { sort: { deadline: sort === 'asc' ? 1 : -1 } }
-
-    //   const result = await assignmentCollection.find(query, options).skip(page * size).limit(size).toArray()
-
-    //   res.send(result);
-    // })
-
-
-    // //find all assignment data count from db
-    // app.get('/jobs-count', async (req, res) => {
-
-    //   const filter = req.query.filter;
-    //   const search = req.query.search;
-    //   let query = {
-    //     title: { $regex: search, $options: 'i' },
-    //   }
-
-    //   if (filter) query.difficulty = filter
-    //   const cnt = await assignmentCollection.countDocuments(query);
-
-    //   res.send(cnt);
-    // })
-
 
 
     // Get all assignments data from db for pagination
@@ -259,7 +222,7 @@ async function run() {
       const filter = req.query.filter
       const sort = req.query.sort
       const search = req.query.search
-    //  console.log(size, page)
+      //  console.log(size, page)
 
       let query = {
         title: { $regex: search, $options: 'i' },
@@ -289,7 +252,31 @@ async function run() {
       res.send({ count })
     })
 
-   // await client.db("admin").command({ ping: 1 });
+    //New endpoint to get the percentage of assignments a user has completed
+    app.get('/assignment-completion/:email', verifyToken, async (req, res) => {
+      const tokenEmail = req.user.email;
+      const email = req.params.email;
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+
+      // Get the total number of assignments
+      const totalAssignments = await assignmentCollection.countDocuments();
+
+      // Get the number of assignments submitted by the user
+      const userSubmissions = await submissionCollection.countDocuments({ 'student_email': email });
+
+      // Calculate the percentage
+      const percentage = totalAssignments > 0 ? (userSubmissions / totalAssignments) * 100 : 0;
+
+      res.send({ percentage: percentage.toFixed(2) });
+    });
+
+  
+  
+    
+
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
